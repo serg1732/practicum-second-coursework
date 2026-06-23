@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package keeper;
+
+option go_package = "github.com/serg1732/practicum-second-coursework/internal/proto;proto";
+
+service GophKeeper {
+  rpc Authentication(AuthenticationRequest) returns (AuthenticationResponse);
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc Registration(RegistrationRequest) returns (RegistrationResponse);
+  rpc UserExist(UserExistRequest) returns (UserExistResponse);
+
+  rpc FileGetList(GetListBinaryRequest) returns (GetListBinaryResponse);
+  rpc FileDownload(DownloadBinaryRequest) returns (DownloadBinaryResponse);
+  rpc FileUpload(UploadBinaryRequest) returns (UploadBinaryResponse);
+  rpc FileRemove(DeleteBinaryRequest) returns (DeleteBinaryResponse);
+
+  rpc EntityCreate(CreateEntityRequest) returns (CreateEntityResponse);
+  rpc EntityGetList(GetListEntityRequest) returns (GetListEntityResponse);
+  rpc EntityDelete(DeleteEntityRequest) returns (DeleteEntityResponse);
+  rpc EntityUpdate(UpdateEntityRequest) returns (UpdateEntityResponse);
+}
+
+message PingRequest {}
+message PingResponse {
+  string message = 1;
+}
+
+message Token {
+  int64  userId = 1;
+  string token = 2;
+  google.protobuf.Timestamp iat = 3;
+  google.protobuf.Timestamp exp = 4;
+}
+
+message User {
+  int64 userId = 1;
+  string username = 2;
+  google.protobuf.Timestamp createdAt = 3;
+  google.protobuf.Timestamp updatedAt = 4;
+}
+message AuthenticationRequest {
+  string username = 1;
+  string password = 2;
+}
+message AuthenticationResponse {
+  Token accessToken = 1;
+}
+message RegistrationRequest {
+  string username = 1;
+  string password = 2;
+}
+message RegistrationResponse {
+  Token accessToken = 1;
+}
+message UserExistRequest {
+  string username = 1;
+}
+message UserExistResponse {
+  bool exist = 1;
+}
+
+message Binary {
+  int64  id = 1;
+  int64  userId = 2;
+  string name = 3;
+  google.protobuf.Timestamp createdAt = 4;
+}
+message UploadBinaryRequest {
+  string name = 1;
+  bytes  data = 2;
+  Token  accessToken = 3;
+}
+message UploadBinaryResponse {
+  string name = 1;
+}
+message GetNodeBinaryRequest {
+  string name = 1;
+  Token accessToken = 2;
+}
+message GetNodeBinaryResponse {
+  Binary data = 1;
+}
+message GetListBinaryRequest {
+  Token accessToken = 1;
+}
+message GetListBinaryResponse {
+  repeated Binary node = 1;
+}
+message DeleteBinaryRequest {
+  string name = 1;
+  Token accessToken = 2;
+}
+message DeleteBinaryResponse {
+  int64  id = 1;
+}
+message DownloadBinaryRequest {
+  string name = 1;
+  Token accessToken = 3;
+}
+message DownloadBinaryResponse {
+  int64  id = 1;
+  bytes  data = 2;
+}
+
+message Entity {
+  int64  id = 1;
+  int64  userId = 2;
+  bytes  data = 3;
+  string metadata = 4;
+  google.protobuf.Timestamp createdAt = 5;
+  google.protobuf.Timestamp updatedAt = 6;
+}
+message CreateEntityRequest {
+  bytes data = 1;
+  string metadata = 2;
+  Token  accessToken = 3;
+}
+message CreateEntityResponse {
+  int64  id = 1;
+}
+message GetListEntityRequest {
+  string  type = 1;
+  Token accessToken = 2;
+}
+message GetListEntityResponse {
+  repeated Entity node = 1;
+}
+message DeleteEntityRequest {
+  string name = 1;
+  string  type = 2;
+  Token accessToken = 3;
+}
+message DeleteEntityResponse {
+  int64  id = 1;
+}
+message UpdateEntityRequest {
+  string name = 1;
+  string type = 2;
+  bytes  data = 3;
+  Token accessToken = 4;
+}
+message UpdateEntityResponse {
+  int64  id = 1;
+}
