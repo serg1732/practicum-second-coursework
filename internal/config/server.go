@@ -2,8 +2,6 @@ package config
 
 import (
 	"flag"
-
-	"github.com/caarlos0/env/v11"
 )
 
 // GophKeeperServerConfig - конфиг сервер.
@@ -25,7 +23,7 @@ type GophKeeperServerConfig struct {
 }
 
 // GetServerConfig - получение конфига сервера.
-func GetServerConfig() (*GophKeeperServerConfig, error) {
+func GetServerConfig() *GophKeeperServerConfig {
 	var serverConfig GophKeeperServerConfig
 	flag.StringVar(&serverConfig.GRPCRunAddr, "g", ":8081", "address and port to run grpc server")
 	flag.StringVar(&serverConfig.DSN, "d", "", "database connection string")
@@ -35,10 +33,5 @@ func GetServerConfig() (*GophKeeperServerConfig, error) {
 	flag.StringVar(&serverConfig.LogLevel, "ll", "INFO", "log level")
 	flag.Int64Var(&serverConfig.TokenExpired, "e", 600, "token lifetime sec")
 
-	flag.Parse()
-
-	if err := env.Parse(&serverConfig); err != nil {
-		return nil, err
-	}
-	return &serverConfig, nil
+	return &serverConfig
 }

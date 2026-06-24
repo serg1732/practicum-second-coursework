@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/caarlos0/env/v11"
 	"github.com/serg1732/practicum-second-coursework/internal/config"
 	"github.com/serg1732/practicum-second-coursework/internal/logger"
 	"github.com/serg1732/practicum-second-coursework/internal/repository"
@@ -22,9 +24,11 @@ func main() {
 	log := logger.NewSlogLogger(slog.LevelInfo)
 	log.Info("Запуск сервера", "version", buildVersion, "commit", buildCommit, "date", buildDate)
 
-	serverConfig, err := config.GetServerConfig()
-	if err != nil {
-		log.Error("Ошибка при парсинге конфига", "error", err)
+	serverConfig := config.GetServerConfig()
+	flag.Parse()
+
+	if err := env.Parse(serverConfig); err != nil {
+		log.Error("Ошибка при парсинге env значений конфига", "error", err)
 		os.Exit(1)
 	}
 

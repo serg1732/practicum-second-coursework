@@ -1,10 +1,13 @@
 package repository
 
 import (
-	"io"
 	"os"
-	"path/filepath"
 	"strconv"
+)
+
+const (
+	dirPerm  os.FileMode = 0700
+	filePerm os.FileMode = 0644
 )
 
 type FileManager struct {
@@ -18,49 +21,56 @@ func BuildFileManager(dir string) *FileManager {
 
 // CreateStorageUser - создание локального хранилища (папок).
 func (f *FileManager) CreateStorageUser(id int64) error {
-	userID := strconv.Itoa(int(id))
-	path := filepath.Join(f.pathDir, userID)
-	err := os.MkdirAll(path, os.ModePerm)
+	root, err := f.openStorageRoot()
 	if err != nil {
 		return err
 	}
-	return nil
+	defer root.Close()
+	return root.MkdirAll(strconv.FormatInt(id, 10), dirPerm)
 }
 
 // UploadFile - создание загруженного с сервера файла.
 func (f *FileManager) UploadFile(id int64, name string, data []byte) error {
-	userID := strconv.Itoa(int(id))
-	path := filepath.Join(f.pathDir, userID, "/", name)
-	err := os.WriteFile(path, data, 0644)
+	root, err := f.openUserRoot(id)
 	if err != nil {
 		return err
 	}
-	return nil
+	defer root.Close()
+	return root.WriteFile(name, data, filePerm)
 }
 
 // DownloadFile - чтение файла для дальнейшей загрузке на сервер.
 func (f *FileManager) DownloadFile(id int64, name string) ([]byte, error) {
-	userID := strconv.Itoa(int(id))
-	path := filepath.Join(f.pathDir, userID, "/", name)
-	file, err := os.Open(path)
+	root, err := f.openUserRoot(id)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	defer root.Close()
+	return root.ReadFile(name)
 }
 
 // RemoveFile - удаление файла на локальном хранилище.
 func (f *FileManager) RemoveFile(id int64, name string) error {
-	userID := strconv.Itoa(int(id))
-	path := filepath.Join(f.pathDir, userID, "/", name)
-	err := os.Remove(path)
+	root, err := f.openUserRoot(id)
 	if err != nil {
 		return err
 	}
-	return nil
+	defer root.Close()
+	return root.Remove(name)
+}
+
+func (f *FileManager) openStorageRoot() (*os.Root, error) {
+	if err := os.MkdirAll(f.pathDir, dirPerm); err != nil {
+		return nil, err
+	}
+	return os.OpenRoot(f.pathDir)
+}
+
+func (f *FileManager) openUserRoot(id int64) (*os.Root, error) {
+	root, err := f.openStorageRoot()
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	return root.OpenRoot(strconv.FormatInt(id, 10))
 }

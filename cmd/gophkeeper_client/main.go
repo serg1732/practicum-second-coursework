@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/caarlos0/env/v11"
 	"github.com/serg1732/practicum-second-coursework/internal/config"
 	"github.com/serg1732/practicum-second-coursework/internal/logger"
 	"github.com/serg1732/practicum-second-coursework/internal/service/grpc/client"
@@ -19,9 +21,11 @@ var buildCommit = "N/A"
 
 func main() {
 	log := logger.NewSlogLogger(slog.LevelInfo)
-	clientConfig, errClientConfig := config.GetClientConfig()
-	if errClientConfig != nil {
-		log.Error("ошибка чтения конфига", "error", errClientConfig)
+	clientConfig := config.GetClientConfig()
+
+	flag.Parse()
+	if err := env.Parse(clientConfig); err != nil {
+		log.Error("Ошибка при парсинге env значений конфига", "error", err)
 		os.Exit(1)
 	}
 

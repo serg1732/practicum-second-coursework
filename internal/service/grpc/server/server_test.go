@@ -45,7 +45,6 @@ func TestShutdownGracefullyStopGRPCServer(t *testing.T) {
 	srv := &Server{log: logger}
 	grpcServer := grpc.NewServer()
 
-	srv.wg.Add(1)
 	done := make(chan struct{})
 
 	go func() {

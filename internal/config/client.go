@@ -2,8 +2,6 @@ package config
 
 import (
 	"flag"
-
-	"github.com/caarlos0/env/v11"
 )
 
 // GophKeeperClientConfig - конфиг клиента.
@@ -19,17 +17,12 @@ type GophKeeperClientConfig struct {
 }
 
 // GetClientConfig - получение конфига клиента.
-func GetClientConfig() (*GophKeeperClientConfig, error) {
-	var serverConfig GophKeeperClientConfig
-	flag.StringVar(&serverConfig.GRPCRemoteAddr, "g", "localhost:8081", "address and port to run grpc server")
-	flag.StringVar(&serverConfig.TLSCertPath, "tc", "", "tls cert path")
-	flag.StringVar(&serverConfig.LocalStoragePath, "s", "/tmp/client/", "local storage path")
-	flag.StringVar(&serverConfig.LogLevel, "ll", "INFO", "log level")
+func GetClientConfig() *GophKeeperClientConfig {
+	var clientConfig GophKeeperClientConfig
+	flag.StringVar(&clientConfig.GRPCRemoteAddr, "g", "localhost:8081", "address and port to run grpc server")
+	flag.StringVar(&clientConfig.TLSCertPath, "tc", "", "tls cert path")
+	flag.StringVar(&clientConfig.LocalStoragePath, "s", "/tmp/client/", "local storage path")
+	flag.StringVar(&clientConfig.LogLevel, "ll", "INFO", "log level")
 
-	flag.Parse()
-
-	if err := env.Parse(&serverConfig); err != nil {
-		return nil, err
-	}
-	return &serverConfig, nil
+	return &clientConfig
 }

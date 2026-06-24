@@ -67,12 +67,12 @@ type Handler struct {
 // BuildGRPCHandler - создание обработчика GRPC сервера.
 func BuildGRPCHandler(
 	logger *slog.Logger,
-	db *repository.DataBase,
 	config *config.GophKeeperServerConfig,
-	userRepository *repository.UserRepo,
-	binaryRepository *repository.FilesRepo,
-	entityRepository *repository.EntityRepo,
-	tokenRepository *repository.TokenRepo) *Handler {
+	db DatabaseRepository,
+	userRepository UserRepository,
+	binaryRepository FileRepository,
+	entityRepository EntityRepository,
+	tokenRepository TokenRepository) *Handler {
 	return &Handler{log: logger, database: db, config: config, user: userRepository, file: binaryRepository,
 		entity: entityRepository, token: tokenRepository, fileManager: repository.BuildFileManager(config.LocalFileStoragePath)}
 }
