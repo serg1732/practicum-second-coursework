@@ -1,0 +1,128 @@
+services:
+  certgen:
+    image: alpine:3.20
+    container_name: gophkeeper-certgen
+    volumes:
+      - ./certs:/certs
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+
+        apk add --no-cache openssl
+
+        rm -f /certs/ca.crt /certs/ca.key /certs/ca.srl /certs/server.crt /certs/server.key /certs/server.csr
+
+        printf '%s\n' \
+          '[req]' \
+          'prompt = no' \
+          'distinguished_name = dn' \
+          'x509_extensions = v3_ca' \
+          '' \
+          '[dn]' \
+          'CN = gophkeeper-local-ca' \
+          '' \
+          '[v3_ca]' \
+          'basicConstraints = critical,CA:TRUE,pathlen:0' \
+          'keyUsage = critical,keyCertSign,cRLSign' \
+          'subjectKeyIdentifier = hash' \
+          > /tmp/ca.cnf
+
+        openssl genrsa -out /certs/ca.key 4096
+
+        openssl req -x509 -new -nodes \
+          -key /certs/ca.key \
+          -sha256 \
+          -days 3650 \
+          -out /certs/ca.crt \
+          -config /tmp/ca.cnf
+
+        printf '%s\n' \
+          '[req]' \
+          'prompt = no' \
+          'default_md = sha256' \
+          'distinguished_name = dn' \
+          'req_extensions = v3_req' \
+          '' \
+          '[dn]' \
+          'CN = localhost' \
+          '' \
+          '[v3_req]' \
+          'basicConstraints = critical,CA:FALSE' \
+          'keyUsage = critical,digitalSignature,keyEncipherment' \
+          'extendedKeyUsage = serverAuth' \
+          'subjectAltName = @alt_names' \
+          '' \
+          '[alt_names]' \
+          'DNS.1 = localhost' \
+          'DNS.2 = server' \
+          'DNS.3 = gophkeeper-server' \
+          'IP.1 = 127.0.0.1' \
+          > /tmp/server.cnf
+
+        openssl genrsa -out /certs/server.key 2048
+
+        openssl req -new \
+          -key /certs/server.key \
+          -out /certs/server.csr \
+          -config /tmp/server.cnf
+
+        openssl x509 -req \
+          -in /certs/server.csr \
+          -CA /certs/ca.crt \
+          -CAkey /certs/ca.key \
+          -CAcreateserial \
+          -out /certs/server.crt \
+          -days 365 \
+          -sha256 \
+          -extfile /tmp/server.cnf \
+          -extensions v3_req
+
+        chmod 644 /certs/ca.crt /certs/server.crt
+        chmod 600 /certs/ca.key /certs/server.key
+    restart: "no"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: gophkeeper-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gophkeeper
+    volumes:
+      - gophkeeper_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gophkeeper"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: docker
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
+    container_name: gophkeeper-server
+    environment:
+      GRPC_ADDRESS: ":8081"
+      DATABASE_DSN: "postgres://postgres:postgres@postgres:5432/gophkeeper?sslmode=disable"
+      TLS_CERT_SERVER_PATH: "/certs/server.crt"
+      TLS_KEY_SERVER_PATH: "/certs/server.key"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      certgen:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  gophkeeper_pg_data:
